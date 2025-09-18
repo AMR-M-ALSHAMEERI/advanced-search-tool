@@ -24,3 +24,5 @@ A lightweight and user-friendly browser extension to help you build advanced sea
 2.  Open your browser's extension management page (e.g., `chrome://extensions`).
 3.  Enable "Developer mode".
 4.  Click "Load unpacked" and select the project folder.
+
+A.M ^_^
