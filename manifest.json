@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Advanced Search Builder",
+  "version": "1.0",
+  "description": "Builds advanced search queries for Google.",
+  "action": {
+    "default_popup": "Advanced Search Tool.html"
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
