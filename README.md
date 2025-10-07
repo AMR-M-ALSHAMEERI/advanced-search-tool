@@ -34,6 +34,10 @@ A lightweight and user-friendly browser extension to help you build advanced sea
 3.  Enable "Developer mode".
 4.  Click "Load unpacked" and select the project folder.
 
+<<<<<<< HEAD
 ## Version
 
 Current version: v1.1.0
+=======
+A.M ^_^
+>>>>>>> 11cbe8b9bd0bc7b56b6a311121029353573ab0fd
