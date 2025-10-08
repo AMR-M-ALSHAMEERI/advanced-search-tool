@@ -323,7 +323,6 @@
                 <option value="duckduckgo">DuckDuckGo</option>
             </select>
 
-            <!-- Add right before the search button -->
             <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
                 <button id="previewBtn" type="button" style="flex: 1; background: var(--card-background); color: var(--text-color); font-weight: 600; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); font-size: 1rem; cursor: pointer; transition: background 0.2s;">
                     Preview
@@ -333,8 +332,7 @@
                 </button>
             </div>
         </form>
-
-        <!-- Add after the search form but before the footer -->
+        <!-- Preview Section -->
         <div id="resultsPreview" style="display: none; margin-top: 1rem; max-height: 200px; overflow-y: auto; border-radius: 8px; background-color: var(--input-background); border: 1px solid var(--border-color);">
         </div>
 
@@ -346,7 +344,6 @@
 
     <div id="messageBox" class="rounded-full"></div>
 
-    <!-- Add this before your main script -->
     <script src="config.js"></script>
     <script src="popup.js"></script>
 </body>
