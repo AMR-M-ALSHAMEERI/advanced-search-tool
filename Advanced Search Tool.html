@@ -51,6 +51,9 @@
             --loading-text: #1f2937;
             --loading-secondary: #6b7280;
             --transition-duration: 0.3s;
+            --link-color: #3b82f6;
+            --url-color: #10b981;
+            --error-color: #ef4444;
         }
         
         [data-theme="dark"] {
@@ -65,6 +68,9 @@
             --loading-background: #1e293b;    /* Loading screen background */
             --loading-text: #f1f5f9;          /* Loading screen text */
             --loading-secondary: #94a3b8;     /* Loading screen secondary text */
+            --link-color: #60a5fa;
+            --url-color: #34d399;
+            --error-color: #f87171;
         }
         
         /* Improved element styles */
@@ -244,7 +250,7 @@
         <div class="flex flex-col items-center justify-center">
             <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234338ca' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='8'/><line x1='21' y1='21' x2='16.65' y2='16.65'/></svg>" alt="Tool Icon" class="rounded-lg mb-4 shadow-md w-24 h-24">
             <h1 class="text-3xl font-bold text-gray-800 mb-2">Advanced Search Tool</h1>
-            <p class="text-sm text-gray-500">Version: v1.1.0</p>
+            <p class="text-sm text-gray-500">Version: v1.3.0</p>
             <p class="text-sm text-gray-500">By Amr</p>
         </div>
     </div>
@@ -316,11 +322,21 @@
                 <option value="bing">Bing</option>
                 <option value="duckduckgo">DuckDuckGo</option>
             </select>
-            <button id="searchBtn" type="submit"
-                style="background: #2563eb; color: #fff; font-weight: 600; padding: 0.75rem; border-radius: 8px; border: none; font-size: 1rem; cursor: pointer; transition: background 0.2s; margin-top: 0.5rem;">
-                Search
-            </button>
+
+            <!-- Add right before the search button -->
+            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                <button id="previewBtn" type="button" style="flex: 1; background: var(--card-background); color: var(--text-color); font-weight: 600; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); font-size: 1rem; cursor: pointer; transition: background 0.2s;">
+                    Preview
+                </button>
+                <button id="searchBtn" type="submit" style="flex: 1; background: var(--button-background); color: var(--button-text); font-weight: 600; padding: 0.75rem; border-radius: 8px; border: none; font-size: 1rem; cursor: pointer; transition: background 0.2s;">
+                    Search
+                </button>
+            </div>
         </form>
+
+        <!-- Add after the search form but before the footer -->
+        <div id="resultsPreview" style="display: none; margin-top: 1rem; max-height: 200px; overflow-y: auto; border-radius: 8px; background-color: var(--input-background); border: 1px solid var(--border-color);">
+        </div>
 
         <!-- Footer -->
         <div class="footer" style="width: 100%; text-align: center; padding-top: 1.5rem; margin-top: 1.5rem;">
@@ -330,6 +346,8 @@
 
     <div id="messageBox" class="rounded-full"></div>
 
+    <!-- Add this before your main script -->
+    <script src="config.js"></script>
     <script src="popup.js"></script>
 </body>
 </html>

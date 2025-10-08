@@ -45,7 +45,11 @@ document.addEventListener('DOMContentLoaded', () => {
             pastYear: "Past year",
             customRange: "Custom range...",
             startDate: "Start date",
-            endDate: "End date"
+            endDate: "End date",
+            preview: "Preview",
+            previewLoading: "Loading preview...",
+            noResults: "No results found",
+            errorFetching: "Error loading preview"
         },
         ar: {
             heading: "أداة البحث المتقدم", 
@@ -72,7 +76,11 @@ document.addEventListener('DOMContentLoaded', () => {
             pastYear: "السنة الماضية",
             customRange: "نطاق مخصص...",
             startDate: "تاريخ البداية",
-            endDate: "تاريخ النهاية"
+            endDate: "تاريخ النهاية",
+            preview: "معاينة",
+            previewLoading: "جار تحميل المعاينة...",
+            noResults: "لم يتم العثور على نتائج",
+            errorFetching: "خطأ في تحميل المعاينة"
         }
     };
 
@@ -152,6 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (document.getElementById('endDate').placeholder) {
             document.getElementById('endDate').placeholder = translations[lang].endDate;
         }
+        document.getElementById('previewBtn').textContent = translations[lang].preview;
     }
 
     function showMessage(message, type = 'info', duration = 3000) {
@@ -212,6 +221,10 @@ document.addEventListener('DOMContentLoaded', () => {
             'endDate': {
                 en: 'The end of your custom date range.',
                 ar: 'نهاية النطاق الزمني المخصص.'
+            },
+            'previewBtn': {
+                en: 'See search results without opening a new tab.',
+                ar: 'اعرض نتائج البحث بدون فتح علامة تبويب جديدة.'
             }
         };
 
@@ -384,6 +397,149 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    document.getElementById('previewBtn').addEventListener('click', async function() {
+        const mainQuery = document.getElementById('mainQuery').value.trim();
+        const exactPhrase = document.getElementById('exactPhrase').value.trim();
+        const siteSearch = document.getElementById('siteSearch').value.trim();
+        const filetype = document.getElementById('filetype').value.trim();
+        const dateRange = document.getElementById('dateRange').value;
+        
+        const hasQuery = mainQuery || exactPhrase || siteSearch || filetype || dateRange;
+        
+        if (!hasQuery) {
+            showMessage(
+                currentLang === 'ar'
+                    ? 'يرجى إدخال معايير البحث أولاً'
+                    : 'Please enter search criteria first',
+                'error'
+            );
+            return;
+        }
+        
+        const resultsPreview = document.getElementById('resultsPreview');
+        resultsPreview.style.display = 'block';
+        resultsPreview.innerHTML = `<div style="text-align:center; padding:1rem;">${translations[currentLang].previewLoading}</div>`;
+        
+        try {
+            const results = await getSearchPreview(mainQuery, exactPhrase, siteSearch, filetype, dateRange);
+            
+            resultsPreview.innerHTML = '';
+            if (results.length === 0) {
+                resultsPreview.innerHTML = `<div style="text-align:center; padding:1rem;">${translations[currentLang].noResults}</div>`;
+                return;
+            }
+            
+            results.forEach(result => {
+                const resultItem = document.createElement('div');
+                resultItem.style.padding = '0.75rem';
+                resultItem.style.borderBottom = '1px solid var(--border-color)';
+                resultItem.style.cursor = 'pointer';
+                
+                const title = document.createElement('div');
+                title.textContent = result.title;
+                title.style.fontWeight = 'bold';
+                title.style.color = '#3b82f6';
+                
+                const url = document.createElement('div');
+                url.textContent = result.url;
+                url.style.fontSize = '0.8rem';
+                url.style.color = '#10b981';
+                url.style.marginBottom = '0.25rem';
+                url.style.textOverflow = 'ellipsis';
+                url.style.overflow = 'hidden';
+                url.style.whiteSpace = 'nowrap';
+                
+                const snippet = document.createElement('div');
+                snippet.textContent = result.snippet;
+                snippet.style.fontSize = '0.9rem';
+                
+                resultItem.appendChild(title);
+                resultItem.appendChild(url);
+                resultItem.appendChild(snippet);
+                
+                resultItem.addEventListener('click', () => {
+                    window.open(result.url, '_blank');
+                });
+                
+                resultsPreview.appendChild(resultItem);
+            });
+        } catch (error) {
+            resultsPreview.innerHTML = `<div style="text-align:center; padding:1rem; color:var(--error-color);">${translations[currentLang].errorFetching}</div>`;
+        }
+    });
+
+    // This function simulates getting search results
+    // In a real extension, you would make API calls to a search engine
+    async function getSearchPreview(mainQuery, exactPhrase, siteSearch, filetype, dateRange) {
+        // Build query similar to how you build it for the search
+        let queryParts = [];
+        if (mainQuery) queryParts.push(mainQuery);
+        if (exactPhrase) queryParts.push(`"${exactPhrase}"`);
+        if (siteSearch) queryParts.push(`site:${siteSearch}`);
+        if (filetype) queryParts.push(`filetype:${filetype}`);
+        
+        const query = queryParts.join(' ');
+        
+        if (!query) {
+            return []; // No query, no results
+        }
+        
+        try {
+            // Build the API URL
+            const apiUrl = new URL('https://www.googleapis.com/customsearch/v1');
+            apiUrl.searchParams.append('key', GOOGLE_API_KEY);
+            apiUrl.searchParams.append('cx', GOOGLE_CX);
+            apiUrl.searchParams.append('q', query);
+            
+            // Optional: Add date filter if available
+            if (dateRange === 'd1') {
+                apiUrl.searchParams.append('dateRestrict', 'd1');
+            } else if (dateRange === 'w1') {
+                apiUrl.searchParams.append('dateRestrict', 'w1');
+            } else if (dateRange === 'm1') {
+                apiUrl.searchParams.append('dateRestrict', 'm1');
+            } else if (dateRange === 'y1') {
+                apiUrl.searchParams.append('dateRestrict', 'y1');
+            }
+            
+            // Fetch results from the API
+            const response = await fetch(apiUrl);
+            const data = await response.json();
+            
+            if (!response.ok) {
+                console.error('API error:', data.error);
+                throw new Error('Error fetching search results');
+            }
+            
+            // Transform API results to our format
+            if (data.items && data.items.length > 0) {
+                return data.items.slice(0, 3).map(item => ({
+                    title: item.title,
+                    url: item.link,
+                    snippet: item.snippet
+                }));
+            } else {
+                return []; // No results found
+            }
+        } catch (error) {
+            console.error('Search preview error:', error);
+            // Return simulated results as fallback
+            return generateFallbackResults(mainQuery, exactPhrase, siteSearch, filetype);
+        }
+    }
+
+    // Add a fallback function in case the API fails or rate limit is reached
+    function generateFallbackResults(mainQuery, exactPhrase, siteSearch, filetype) {
+        const query = [mainQuery, exactPhrase].filter(Boolean).join(' ') || 'search';
+        return [
+            {
+                title: `API limit reached - Simulated result for ${query}`,
+                url: `https://example.com/search?q=${encodeURIComponent(query)}`,
+                snippet: `This is a fallback result because the API daily limit was reached or an error occurred. Real results are available with the full search.`
+            }
+        ];
+    }
+
     // --- Initial Setup ---
     langToggleContainer.style.display = 'none';
     mainContent.style.transition = 'opacity 0.7s ease';
@@ -422,4 +578,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }, { once: true }); // { once: true } ensures the listener only runs once
 
     }, 1500); // Reduced timeout for a faster startup
+
+    // --- Google API Configuration ---
+    let GOOGLE_API_KEY, GOOGLE_CX;
+
+    try {
+      // Try to load from config.js
+      GOOGLE_API_KEY = CONFIG.GOOGLE_API_KEY;
+      GOOGLE_CX = CONFIG.GOOGLE_CX;
+      
+      // Check if values are placeholders
+      if (GOOGLE_API_KEY === 'YOUR_GOOGLE_API_KEY_HERE') {
+        throw new Error('API key not configured');
+      }
+    } catch (error) {
+      console.warn('API configuration not found or invalid. Preview will use simulated results.');
+      GOOGLE_API_KEY = null;
+      GOOGLE_CX = null;
+    }
 });
