@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- Global State ---
-    let currentLang = 'en';
+    let currentLang = localStorage.getItem('language') || 'en'; // Load saved language
     let isDarkMode = localStorage.getItem('darkMode') === 'true';
 
     // --- Element References ---
@@ -36,7 +36,16 @@ document.addEventListener('DOMContentLoaded', () => {
             bing: "Bing", 
             duckduckgo: "DuckDuckGo",
             darkMode: "Dark Mode",
-            lightMode: "Light Mode"
+            lightMode: "Light Mode",
+            dateRange: "Date Range",
+            anyTime: "Any time",
+            past24Hours: "Past 24 hours",
+            pastWeek: "Past week",
+            pastMonth: "Past month",
+            pastYear: "Past year",
+            customRange: "Custom range...",
+            startDate: "Start date",
+            endDate: "End date"
         },
         ar: {
             heading: "أداة البحث المتقدم", 
@@ -54,7 +63,16 @@ document.addEventListener('DOMContentLoaded', () => {
             bing: "بينج", 
             duckduckgo: "دك دك جو",
             darkMode: "الوضع الداكن",
-            lightMode: "الوضع الفاتح"
+            lightMode: "الوضع الفاتح",
+            dateRange: "النطاق الزمني",
+            anyTime: "أي وقت",
+            past24Hours: "آخر 24 ساعة",
+            pastWeek: "الأسبوع الماضي",
+            pastMonth: "الشهر الماضي",
+            pastYear: "السنة الماضية",
+            customRange: "نطاق مخصص...",
+            startDate: "تاريخ البداية",
+            endDate: "تاريخ النهاية"
         }
     };
 
@@ -76,6 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setLanguage(lang) {
         currentLang = lang;
+        localStorage.setItem('language', lang); // Save language on change
         if (lang === 'ar') {
             document.documentElement.lang = 'ar';
             document.body.dir = 'rtl';
@@ -117,6 +136,22 @@ document.addEventListener('DOMContentLoaded', () => {
         searchEngineSelect.options[0].text = translations[lang].google;
         searchEngineSelect.options[1].text = translations[lang].bing;
         searchEngineSelect.options[2].text = translations[lang].duckduckgo;
+        document.getElementById('label-dateRange').textContent = translations[lang].dateRange;
+        
+        const dateRangeSelect = document.getElementById('dateRange');
+        dateRangeSelect.options[0].text = translations[lang].anyTime;
+        dateRangeSelect.options[1].text = translations[lang].past24Hours;
+        dateRangeSelect.options[2].text = translations[lang].pastWeek;
+        dateRangeSelect.options[3].text = translations[lang].pastMonth;
+        dateRangeSelect.options[4].text = translations[lang].pastYear;
+        dateRangeSelect.options[5].text = translations[lang].customRange;
+        
+        if (document.getElementById('startDate').placeholder) {
+            document.getElementById('startDate').placeholder = translations[lang].startDate;
+        }
+        if (document.getElementById('endDate').placeholder) {
+            document.getElementById('endDate').placeholder = translations[lang].endDate;
+        }
     }
 
     function showMessage(message, type = 'info', duration = 3000) {
@@ -134,7 +169,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setupTooltips() {
         const tooltipData = {
-            // Existing tooltips for form fields
             'mainQuery': {
                 en: 'Your primary search term(s). This is what you\'re looking for.',
                 ar: 'مصطلح البحث الأساسي. هذا ما تبحث عنه.'
@@ -155,8 +189,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 en: 'Choose which search engine to use for your query.',
                 ar: 'اختر محرك البحث الذي تريد استخدامه للاستعلام.'
             },
-            
-            // Add tooltips for language toggle
             'lang-label': {
                 en: 'Toggle between English and Arabic',
                 ar: 'التبديل بين الإنجليزية والعربية'
@@ -168,12 +200,21 @@ document.addEventListener('DOMContentLoaded', () => {
             'lang-ar': {
                 en: 'Switch to Arabic language',
                 ar: 'تغيير اللغة إلى العربية'
+            },
+            'dateRange': {
+                en: 'Limit results to a specific time period.',
+                ar: 'حصر النتائج في فترة زمنية محددة.'
+            },
+            'startDate': {
+                en: 'The beginning of your custom date range.',
+                ar: 'بداية النطاق الزمني المخصص.'
+            },
+            'endDate': {
+                en: 'The end of your custom date range.',
+                ar: 'نهاية النطاق الزمني المخصص.'
             }
-            
-            // Remove static theme toggle tooltip - we'll generate it dynamically
         };
 
-        // Create tooltip element
         const tooltip = document.createElement('div');
         tooltip.className = 'tooltip';
         tooltip.style.position = 'absolute';
@@ -186,59 +227,65 @@ document.addEventListener('DOMContentLoaded', () => {
         tooltip.style.zIndex = '100';
         tooltip.style.maxWidth = '250px';
         tooltip.style.display = 'none';
-        tooltip.style.pointerEvents = 'none'; // Ensure tooltip doesn't block clicks
+        tooltip.style.pointerEvents = 'none';
+        tooltip.style.transition = 'opacity 0.15s ease';
         document.body.appendChild(tooltip);
 
-        // Add event listeners to form elements
+        function positionTooltip(element, text, forceBelow = false) {
+            tooltip.textContent = text;
+            tooltip.style.display = 'block';
+            tooltip.style.opacity = '0';
+            tooltip.style.direction = currentLang === 'ar' ? 'rtl' : 'ltr';
+
+            // allow DOM to paint the new text so we can measure
+            requestAnimationFrame(() => {
+                const rect = element.getBoundingClientRect();
+                const tooltipRect = tooltip.getBoundingClientRect();
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                const OFFSET = 5; // Reduced offset from 10px to 5px
+
+                let top = rect.top - tooltipRect.height - OFFSET; // default above
+                if (forceBelow || top < 8) {
+                    top = rect.bottom + OFFSET; // fall back below if near top
+                }
+
+                let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+                left = Math.max(8, Math.min(left, viewportWidth - tooltipRect.width - 8));
+
+                tooltip.style.top = `${top}px`;
+                tooltip.style.left = `${left}px`;
+                tooltip.style.opacity = '1';
+            });
+        }
+
         Object.keys(tooltipData).forEach(id => {
             const element = document.getElementById(id);
-            if (element) {
-                element.addEventListener('mouseenter', () => {
-                    const text = tooltipData[id][currentLang];
-                    const rect = element.getBoundingClientRect();
-                    
-                    // Adjust position for toggles at the top
-                    let topPosition = rect.bottom + 8;
-                    let leftPosition = rect.left;
-                    
-                    // If it's one of the top toggles, show tooltip below
-                    if (id === 'theme-toggle' || id === 'lang-label' || id === 'lang-en' || id === 'lang-ar') {
-                        topPosition = rect.bottom + 5;
-                        leftPosition = rect.left + (rect.width / 2) - 60; // Center better
-                    }
-                    
-                    tooltip.textContent = text;
-                    tooltip.style.display = 'block';
-                    tooltip.style.top = `${topPosition}px`;
-                    tooltip.style.left = `${leftPosition}px`;
-                    tooltip.style.direction = currentLang === 'ar' ? 'rtl' : 'ltr';
-                });
-                
-                element.addEventListener('mouseleave', () => {
-                    tooltip.style.display = 'none';
-                });
-            }
+            if (!element) return;
+
+            element.addEventListener('mouseenter', () => {
+                positionTooltip(element, tooltipData[id][currentLang]);
+            });
+
+            element.addEventListener('mouseleave', () => {
+                tooltip.style.display = 'none';
+                tooltip.style.opacity = '0';
+            });
         });
-        
-        // Special handling for theme toggle - always get current state dynamically
+
         const themeToggleElement = document.getElementById('theme-toggle');
         if (themeToggleElement) {
             themeToggleElement.addEventListener('mouseenter', () => {
-                // Get current theme state and set appropriate tooltip
-                const tooltipText = isDarkMode ? 
-                    (currentLang === 'ar' ? 'التبديل إلى الوضع الفاتح' : 'Switch to light mode') :
-                    (currentLang === 'ar' ? 'التبديل إلى الوضع الداكن' : 'Switch to dark mode');
-                
-                const rect = themeToggleElement.getBoundingClientRect();
-                tooltip.textContent = tooltipText;
-                tooltip.style.display = 'block';
-                tooltip.style.top = `${rect.bottom + 5}px`;
-                tooltip.style.left = `${rect.left + (rect.width / 2) - 60}px`;
-                tooltip.style.direction = currentLang === 'ar' ? 'rtl' : 'ltr';
+                const text = isDarkMode
+                    ? (currentLang === 'ar' ? 'التبديل إلى الوضع الفاتح' : 'Switch to light mode')
+                    : (currentLang === 'ar' ? 'التبديل إلى الوضع الداكن' : 'Switch to dark mode');
+
+                positionTooltip(themeToggleElement, text, true);
             });
-            
+
             themeToggleElement.addEventListener('mouseleave', () => {
                 tooltip.style.display = 'none';
+                tooltip.style.opacity = '0';
             });
         }
     }
@@ -257,31 +304,70 @@ document.addEventListener('DOMContentLoaded', () => {
         const exactPhrase = document.getElementById('exactPhrase').value.trim();
         const siteSearch = document.getElementById('siteSearch').value.trim();
         const filetype = document.getElementById('filetype').value.trim();
-        const hasQuery = mainQuery || exactPhrase || siteSearch || filetype;
+        const dateRange = document.getElementById('dateRange').value;
+        
+        let dateFilter = '';
+        if (dateRange) {
+            if (dateRange === 'custom') {
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+                if (startDate && endDate) dateFilter = `after:${startDate} before:${endDate}`;
+            } else {
+                dateFilter = dateRange;
+            }
+        }
+        
+        const hasQuery = mainQuery || exactPhrase || siteSearch || filetype || dateFilter;
 
-        if (hasQuery) {
-            // Build and open search URL (logic is correct)
-            const searchEngine = document.getElementById('searchEngine').value;
-            let queryParts = [];
-            if (mainQuery) queryParts.push(mainQuery);
-            if (exactPhrase) queryParts.push(`"${exactPhrase}"`);
-            if (siteSearch) queryParts.push(`site:${siteSearch}`);
-            if (filetype) queryParts.push(`filetype:${filetype}`);
-            const finalQuery = encodeURIComponent(queryParts.join(' '));
-            let searchUrl = '';
-            if (searchEngine === 'google') searchUrl = `https://www.google.com/search?q=${finalQuery}`;
-            else if (searchEngine === 'bing') searchUrl = `https://www.bing.com/search?q=${finalQuery}`;
-            else if (searchEngine === 'duckduckgo') searchUrl = `https://duckduckgo.com/?q=${finalQuery}`;
-            window.open(searchUrl, '_blank');
-        } else {
-            // This will now use the correct language with improved styling
+        if (!hasQuery) {
             showMessage(
                 currentLang === 'ar'
                     ? 'تم الرفض: يجب إدخال قيمة واحدة على الأقل للبحث.'
                     : 'Denied: You must enter at least one value to search.',
                 'error'
             );
+            return;
         }
+
+        const searchEngine = document.getElementById('searchEngine').value;
+        let queryParts = [];
+        if (mainQuery) queryParts.push(mainQuery);
+        if (exactPhrase) queryParts.push(`"${exactPhrase}"`);
+        if (siteSearch) queryParts.push(`site:${siteSearch}`);
+        if (filetype) queryParts.push(`filetype:${filetype}`);
+
+        const searchUrlBuilders = {
+            google: (parts, date) => {
+                let url = 'https://www.google.com/search?q=';
+                let specialParams = '';
+                if (date) {
+                    if (['d1', 'w1', 'm1', 'y1'].includes(date)) {
+                        specialParams = `&tbs=qdr:${date.charAt(0)}`;
+                    } else {
+                        parts.push(date);
+                    }
+                }
+                return url + encodeURIComponent(parts.join(' ')) + specialParams;
+            },
+            bing: (parts, date) => {
+                let url = 'https://www.bing.com/search?q=';
+                let specialParams = '';
+                if (date) {
+                    const dateMap = { d1: 'ez1', w1: 'ez2', m1: 'ez3', y1: 'ez5' };
+                    if (dateMap[date]) {
+                        specialParams = `&filters=ex1%3a%22${dateMap[date]}%22`;
+                    }
+                }
+                return url + encodeURIComponent(parts.join(' ')) + specialParams;
+            },
+            duckduckgo: (parts, date) => {
+                // DuckDuckGo has limited date range support via URL params
+                return `https://duckduckgo.com/?q=${encodeURIComponent(parts.join(' '))}`;
+            }
+        };
+
+        const searchUrl = searchUrlBuilders[searchEngine](queryParts, dateFilter);
+        window.open(searchUrl, '_blank');
     });
 
     // Add theme toggle listener
@@ -289,24 +375,28 @@ document.addEventListener('DOMContentLoaded', () => {
         setTheme(!isDarkMode);
     });
 
+    document.getElementById('dateRange').addEventListener('change', function() {
+        const customDateContainer = document.getElementById('customDateContainer');
+        if (this.value === 'custom') {
+            customDateContainer.style.display = 'flex'; // Changed from 'flex' to 'block'
+        } else {
+            customDateContainer.style.display = 'none';
+        }
+    });
+
     // --- Initial Setup ---
     langToggleContainer.style.display = 'none';
     mainContent.style.transition = 'opacity 0.7s ease';
     mainContent.style.opacity = '0';
     
-    // Apply initial theme based on saved preference
     setTheme(isDarkMode);
 
-    // Fix for loading screen and clickable elements (moved from inline script)
     function ensureElementsClickable() {
-        // Ensure loading screen is properly hidden after transition
         if (loadingScreen && loadingScreen.classList.contains('hidden')) {
             loadingScreen.style.display = 'none';
             loadingScreen.style.pointerEvents = 'none';
             loadingScreen.style.zIndex = '-1';
         }
-        
-        // Make sure all form elements are clickable
         const formElements = document.querySelectorAll('#searchForm input, #searchForm select, #searchForm button, #theme-toggle, #lang-label, #lang-en, #lang-ar');
         formElements.forEach(element => {
             element.style.pointerEvents = 'auto';
@@ -315,18 +405,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Replace the nested setTimeout with this more robust version
     setTimeout(() => {
         loadingScreen.style.opacity = '0';
-        setTimeout(() => {
+        
+        loadingScreen.addEventListener('transitionend', () => {
             loadingScreen.classList.add('hidden');
             mainContent.classList.remove('hidden');
             mainContent.style.opacity = '1';
             langToggleContainer.style.display = 'flex';
-            ensureElementsClickable(); // Call the function to fix clickability
-        }, 700);
-    }, 2000);
+            
+            ensureElementsClickable();
+            setupTooltips();
+            setLanguage(currentLang);
+            document.getElementById('currentYear').textContent = new Date().getFullYear();
+        }, { once: true }); // { once: true } ensures the listener only runs once
 
-    document.getElementById('currentYear').textContent = new Date().getFullYear();
-    setLanguage(currentLang); // Set initial language
-    setupTooltips();
+    }, 1500); // Reduced timeout for a faster startup
 });

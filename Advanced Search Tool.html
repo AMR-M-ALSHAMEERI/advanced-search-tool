@@ -289,6 +289,27 @@
             <label id="label-filetype" for="filetype" style="font-weight: 500;">File Type</label>
             <input id="filetype" type="text" placeholder="Enter file type"
                 style="padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1rem;" />
+            <label id="label-dateRange" for="dateRange" style="font-weight: 500;">Date Range</label>
+            <div>
+                <select id="dateRange" style="width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1rem; margin-bottom: 0.5rem;">
+                    <option value="">Any time</option>
+                    <option value="d1">Past 24 hours</option>
+                    <option value="w1">Past week</option>
+                    <option value="m1">Past month</option>
+                    <option value="y1">Past year</option>
+                    <option value="custom">Custom range...</option>
+                </select>
+                <div id="customDateContainer" style="display: none; flex-direction: column; gap: 0.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <label for="startDate" style="flex: 0 0 auto; width: 80px; font-size: 0.9rem;">Start date:</label>
+                        <input type="date" id="startDate" style="flex: 1; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1rem;" />
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <label for="endDate" style="flex: 0 0 auto; width: 80px; font-size: 0.9rem;">End date:</label>
+                        <input type="date" id="endDate" style="flex: 1; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1rem;" />
+                    </div>
+                </div>
+            </div>
             <label id="label-searchEngine" for="searchEngine" style="font-weight: 500;">Search Engine</label>
             <select id="searchEngine" style="padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: 1rem;">
                 <option value="google">Google</option>
